@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Remote Image Dashboard</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      /* Светлая тема (по умолчанию) */
+      --bg-color: #f4f6fa;
+      --card-bg: #fff;
+      --text-color: #222;
+      --border-color: #e9ecef;
+      --shadow-color: rgba(0,0,0,0.07);
+      --hover-shadow: rgba(76,175,80,0.13);
+      --input-border: #ccc;
+      --input-focus: #4CAF50;
+      --section-bg: #f8f9fa;
+      --muted-text: #6c757d;
+      --playlist-bg: #e9ecef;
+      --playlist-hover: #dee2e6;
+    }
+
+    [data-theme="dark"] {
+      /* Темная тема */
+      --bg-color: #1a1a1a;
+      --card-bg: #2d2d2d;
+      --text-color: #e0e0e0;
+      --border-color: #404040;
+      --shadow-color: rgba(0,0,0,0.3);
+      --hover-shadow: rgba(76,175,80,0.2);
+      --input-border: #555;
+      --input-focus: #4CAF50;
+      --section-bg: #333;
+      --muted-text: #aaa;
+      --playlist-bg: #404040;
+      --playlist-hover: #555;
+    }
+
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      margin: 0;
+      background: var(--bg-color);
+      color: var(--text-color);
+      min-height: 100vh;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Кнопка переключения темы */
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--card-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 12px var(--shadow-color);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 20px var(--shadow-color);
+    }
+
+    .theme-toggle .material-icons {
+      font-size: 24px;
+      color: var(--text-color);
+      transition: color 0.3s;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 30px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .add-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin: 30px 0 20px 0;
+    }
+    .add-section input {
+      padding: 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      font-size: 16px;
+      width: 280px;
+      transition: border 0.2s;
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+    .add-section input:focus {
+      border: 1.5px solid var(--input-focus);
+      outline: none;
+    }
+    .add-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 18px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(76,175,80,0.08);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .add-btn:hover {
+      background: #388e3c;
+      box-shadow: 0 4px 16px rgba(76,175,80,0.15);
+    }
+    .pc-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+    }
+    .pc-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px var(--shadow-color);
+      padding: 20px 18px 16px 18px;
+      width: 320px;
+      position: relative;
+      transition: box-shadow 0.2s, background-color 0.3s;
+    }
+    .pc-card:hover {
+      box-shadow: 0 6px 24px var(--hover-shadow);
+    }
+    .pc-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 20px;
+      font-weight: 500;
+      word-break: break-all;
+    }
+    .images {
+      margin-top: 10px;
+    }
+    .img-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    img {
+      max-width: 80px;
+      max-height: 80px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px var(--shadow-color);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    img:hover {
+      transform: scale(1.07);
+    }
+    .open-btn {
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 6px 12px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .open-btn:hover {
+      background: #0d47a1;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(244,67,54,0.08);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .delete-btn:hover {
+      background: #b71c1c;
+      box-shadow: 0 4px 16px rgba(244,67,54,0.15);
+    }
+    .delete-btn[title] {
+      position: absolute;
+    }
+    .slideshow-controls {
+      margin-top: 15px;
+      padding: 15px;
+      background: var(--section-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    .slideshow-controls h4 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: var(--text-color);
+    }
+    .playlist-images {
+      max-height: 120px;
+      overflow-y: auto;
+      margin: 10px 0;
+      padding: 8px;
+      background: var(--card-bg);
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    .playlist-image {
+      display: inline-block;
+      margin: 2px;
+      padding: 4px;
+      background: var(--playlist-bg);
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .playlist-image:hover {
+      background: var(--playlist-hover);
+    }
+    .playlist-image.selected {
+      background: #007bff;
+      color: white;
+    }
+    .slideshow-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .slideshow-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.2s;
+    }
+    .create-playlist-btn {
+      background: #28a745;
+      color: white;
+    }
+    .create-playlist-btn:hover {
+      background: #218838;
+    }
+    .start-slideshow-btn {
+      background: #007bff;
+      color: white;
+    }
+    .start-slideshow-btn:hover {
+      background: #0056b3;
+    }
+    .stop-slideshow-btn {
+      background: #dc3545;
+      color: white;
+    }
+    .stop-slideshow-btn:hover {
+      background: #c82333;
+    }
+    .interval-input {
+      width: 80px;
+      padding: 4px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+    .delete-image-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 6px 10px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .delete-image-btn:hover {
+      background: #b71c1c;
+    }
+    .upload-section {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      transition: border-color 0.3s;
+    }
+    @media (max-width: 700px) {
+      .pc-card { width: 95vw; }
+      .add-section input { width: 60vw; }
+      .theme-toggle {
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+      }
+      .theme-toggle .material-icons {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Кнопка переключения темы -->
+  <div class="theme-toggle" onclick="toggleTheme()" title="Переключить тему">
+    <span class="material-icons" id="theme-icon">dark_mode</span>
+  </div>
+
+  <h1>Remote Image Dashboard</h1>
+  <div class="add-section">
+    <input type="text" id="pc-ip" placeholder="IP или домен (например, 10.72.132.31)">
+    <button class="add-btn" onclick="addPC()" title="Добавить клиента">
+      <span class="material-icons">person_add</span> Добавить
+    </button>
+  </div>
+  <div class="pc-list" id="pc-list"></div>
+  <script>
+    let PCs = JSON.parse(localStorage.getItem('remote-pcs')) || [];
+    function addPC() {
+      let pcAddress = document.getElementById('pc-ip').value.trim();
+      if (!pcAddress) return;
+      
+      // Автоматически добавляем порт 8080, если он не указан
+      if (!pcAddress.includes(':')) {
+        pcAddress = pcAddress + ':8080';
+      }
+      
+      if (PCs.includes(pcAddress)) return;
+      PCs.push(pcAddress);
+      savePCs();
+      updatePCList();
+      document.getElementById('pc-ip').value = '';
+    }
+    function removePC(pcAddress) {
+      PCs = PCs.filter(pc => pc !== pcAddress);
+      savePCs();
+      updatePCList();
+    }
+    function savePCs() {
+      localStorage.setItem('remote-pcs', JSON.stringify(PCs));
+    }
+    function updatePCList() {
+      const pcList = document.getElementById('pc-list');
+      pcList.innerHTML = '';
+      PCs.forEach(pc => {
+        const pcCard = document.createElement('div');
+        pcCard.className = 'pc-card';
+        pcCard.innerHTML = `
+          <button class="delete-btn" onclick="removePC('${pc}')" title="Удалить клиента">
+            <span class="material-icons">delete</span>
+          </button>
+          <h3>${pc}</h3>
+          <div class="images" id="images-${pc}">Загрузка...</div>
+          
+          <div class="upload-section">
+            <input type="file" id="upload-${pc}" accept="image/*" style="width: 100%;">
+            <button class="slideshow-btn create-playlist-btn" onclick="uploadImage('${pc}')" title="Загрузить на ${pc}">
+              <span class="material-icons" style="font-size:16px;">upload</span>
+            </button>
+          </div>
+
+          <div class="slideshow-controls">
+            <h4>Слайдшоу</h4>
+            <div style="font-size: 12px; color: #6c757d; margin-bottom: 8px;">
+              💡 <strong>Совет:</strong> Нажмите Ctrl+клик по изображениям для добавления в плейлист
+            </div>
+            <div class="playlist-images" id="playlist-${pc}">
+              <div style="color: #6c757d; font-style: italic;">Выберите изображения для плейлиста</div>
+            </div>
+            <div style="margin: 10px 0;">
+              <label>Интервал (мс): </label>
+              <input type="number" class="interval-input" id="interval-${pc}" value="5000" min="1000" max="60000">
+            </div>
+            <div class="slideshow-buttons">
+              <button class="slideshow-btn create-playlist-btn" onclick="createPlaylist('${pc}')" title="Создать плейлист">
+                <span class="material-icons" style="font-size:16px;">playlist_add</span> Создать плейлист
+              </button>
+              <button class="slideshow-btn start-slideshow-btn" onclick="startSlideshow('${pc}')" title="Запустить слайдшоу">
+                <span class="material-icons" style="font-size:16px;">play_arrow</span> Запустить
+              </button>
+              <button class="slideshow-btn stop-slideshow-btn" onclick="stopSlideshow('${pc}')" title="Остановить слайдшоу">
+                <span class="material-icons" style="font-size:16px;">stop</span> Остановить
+              </button>
+            </div>
+          </div>
+        `;
+        pcList.appendChild(pcCard);
+        fetchImages(pc);
+      });
+    }
+    function fetchImages(pc) {
+      fetch(`http://${pc}/api/images`)
+        .then(res => res.json())
+        .then(images => {
+          const container = document.getElementById(`images-${pc}`);
+          if (images.length === 0) {
+            container.innerHTML = '<div style="color: #6c757d; font-style: italic; padding: 10px 0;">Нет изображений</div>';
+            return;
+          }
+          container.innerHTML = images.map(img => `
+            <div class="img-block">
+              <img src="http://${pc}/images/${img}?t=${new Date().getTime()}" alt="${img}" title="Добавить в плейлист (Ctrl+клик)" data-filename="${img}">
+              <button class="open-btn" onclick="openOnPC('${pc}', '${img}')" title="Открыть на ${pc}">
+                <span class="material-icons" style="font-size:16px;">open_in_new</span> Открыть
+              </button>
+              <button class="delete-image-btn" onclick="deleteImage(event, '${pc}', '${img}')" title="Удалить с ${pc}">
+                <span class="material-icons" style="font-size:16px;">delete</span>
+              </button>
+            </div>
+          `).join('');
+          
+          // Добавляем обработчики для выбора изображений в плейлист
+          let ctrlClickActive = false;
+          container.querySelectorAll('img').forEach(img => {
+            img.addEventListener('mousedown', function(e) {
+              if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleImageInPlaylist(pc, this.dataset.filename, this);
+                ctrlClickActive = true;
+                return false;
+              } else {
+                ctrlClickActive = false;
+              }
+            });
+          });
+        })
+        .catch(err => {
+          console.error(`Ошибка загрузки с ${pc}:`, err);
+          document.getElementById(`images-${pc}`).innerHTML = 'Ошибка подключения';
+        });
+    }
+    function openOnPC(pc, filename) {
+      const token = 'SECRET123';
+      fetch(`http://${pc}/api/open-image?filename=${filename}&token=${token}`)
+        .then(response => response.text())
+        .then(message => alert(message))
+        .catch(err => alert('Ошибка: ' + err));
+    }
+    
+    // Функции для слайдшоу
+    let playlists = {};
+    
+    function toggleImageInPlaylist(pc, filename, imgElement) {
+      if (!playlists[pc]) playlists[pc] = [];
+      
+      const index = playlists[pc].indexOf(filename);
+      if (index > -1) {
+        playlists[pc].splice(index, 1);
+        imgElement.style.border = '';
+      } else {
+        playlists[pc].push(filename);
+        imgElement.style.border = '3px solid #007bff';
+      }
+      
+      updatePlaylistDisplay(pc);
+    }
+    
+    function updatePlaylistDisplay(pc) {
+      const playlistContainer = document.getElementById(`playlist-${pc}`);
+      if (!playlists[pc] || playlists[pc].length === 0) {
+        playlistContainer.innerHTML = '<div style="color: #6c757d; font-style: italic;">Выберите изображения для плейлиста (Ctrl+клик)</div>';
+        return;
+      }
+      
+      playlistContainer.innerHTML = `
+        <div style="margin-bottom: 8px; font-size: 12px; color: #495057;">
+          Выбрано: ${playlists[pc].length} изображений
+        </div>
+        ${playlists[pc].map((filename, index) => 
+          `<span class="playlist-image" onclick="removeFromPlaylist('${pc}', ${index})" title="Удалить из плейлиста">
+            ${filename} <span style="color: #dc3545; margin-left: 4px;">×</span>
+          </span>`
+        ).join('')}
+      `;
+    }
+    
+    function removeFromPlaylist(pc, index) {
+      if (playlists[pc] && playlists[pc][index]) {
+        playlists[pc].splice(index, 1);
+        updatePlaylistDisplay(pc);
+        
+        // Обновляем визуальное выделение изображений
+        const images = document.querySelectorAll(`#images-${pc} img`);
+        images.forEach(img => {
+          if (img.dataset.filename === playlists[pc][index]) {
+            img.style.border = '';
+          }
+        });
+      }
+    }
+    
+    function createPlaylist(pc) {
+      if (!playlists[pc] || playlists[pc].length === 0) {
+        alert('Сначала выберите изображения для плейлиста (Ctrl+клик по изображениям)');
+        return;
+      }
+      
+      const interval = parseInt(document.getElementById(`interval-${pc}`).value) || 5000;
+      
+      fetch(`http://${pc}/api/playlist`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          images: playlists[pc],
+          interval: interval
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Плейлист создан!');
+        } else {
+          alert('Ошибка создания плейлиста: ' + data.error);
+        }
+      })
+      .catch(err => alert('Ошибка: ' + err));
+    }
+    
+    function startSlideshow(pc) {
+      const token = 'SECRET123';
+      fetch(`http://${pc}/api/slideshow/start?token=${token}`, {
+        method: 'POST'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Слайдшоу запущен!');
+        } else {
+          alert('Ошибка запуска слайдшоу: ' + data.error);
+        }
+      })
+      .catch(err => alert('Ошибка: ' + err));
+    }
+    
+    function stopSlideshow(pc) {
+      const token = 'SECRET123';
+      fetch(`http://${pc}/api/slideshow/stop?token=${token}`, {
+        method: 'POST'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Слайдшоу остановлен!');
+        } else {
+          alert('Ошибка остановки слайдшоу: ' + data.error);
+        }
+      })
+      .catch(err => alert('Ошибка: ' + err));
+    }
+    
+    function uploadImage(pc) {
+      const input = document.getElementById(`upload-${pc}`);
+      const file = input.files[0];
+      if (!file) {
+        alert('Пожалуйста, выберите файл для загрузки.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      fetch(`http://${pc}/api/upload`, {
+        method: 'POST',
+        body: formData,
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Файл успешно загружен!');
+          fetchImages(pc); // Обновляем список изображений
+        } else {
+          alert('Ошибка загрузки: ' + data.error);
+        }
+      })
+      .catch(err => alert('Ошибка сети: ' + err));
+    }
+
+    function deleteImage(event, pc, filename) {
+      event.stopPropagation(); // Останавливаем всплытие, чтобы не сработал click на картинке
+      if (!confirm(`Вы уверены, что хотите удалить ${filename} с ${pc}?`)) {
+        return;
+      }
+
+      fetch(`http://${pc}/api/delete-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: filename })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Файл удалён!');
+          fetchImages(pc); // Обновляем список изображений
+        } else {
+          alert('Ошибка удаления: ' + data.error);
+        }
+      })
+      .catch(err => alert('Ошибка сети: ' + err));
+    }
+    
+    // Функция переключения темы
+    function toggleTheme() {
+      const body = document.body;
+      const themeIcon = document.getElementById('theme-icon');
+      const currentTheme = body.getAttribute('data-theme');
+      
+      if (currentTheme === 'dark') {
+        // Переключаем на светлую тему
+        body.removeAttribute('data-theme');
+        themeIcon.textContent = 'dark_mode';
+        localStorage.setItem('theme', 'light');
+      } else {
+        // Переключаем на темную тему
+        body.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = 'light_mode';
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+    
+    // Инициализация темы при загрузке страницы
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const themeIcon = document.getElementById('theme-icon');
+      
+      if (savedTheme === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = 'light_mode';
+      } else {
+        themeIcon.textContent = 'dark_mode';
+      }
+    }
+    
+    // Инициализируем тему и список ПК
+    initTheme();
+    updatePCList();
+  </script>
+</body>
+</html>
