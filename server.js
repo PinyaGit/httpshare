@@ -60,9 +60,13 @@ app.get('/api/open-image', (req, res) => {
     return res.status(400).send('Открытие изображений поддерживается только на Ubuntu/Linux');
   }
 
-  exec(`xdg-open "${imagePath}"`, (err) => {
-    if (err) return res.status(500).send('Ошибка открытия');
-    res.send(`Картинка ${filename} открыта на этом ПК!`);
+  // Останавливаем старые процессы feh перед открытием нового изображения
+  exec('pkill -f "feh" 2>/dev/null', () => {
+    // Открываем изображение через feh в полноэкранном режиме
+    exec(`feh -F -Z "${imagePath}" &`, (err) => {
+      if (err) return res.status(500).send('Ошибка открытия');
+      res.send(`Картинка ${filename} открыта через feh на этом ПК!`);
+    });
   });
 });
 
@@ -184,11 +188,9 @@ app.post('/api/slideshow/stop', (req, res) => {
     return res.status(400).json({ error: 'Остановка слайдшоу поддерживается только на Ubuntu/Linux' });
   }
 
-  exec('pkill -f "eog|feh|display|gwenview" 2>/dev/null', () => {});
-  exec('pkill -f "node.*slideshow.js"', (err) => {
-    // Игнорируем ошибки, если процесс не найден
-  });
-  res.json({ success: true, message: 'Слайдшоу остановлено' });
+  // Останавливаем все процессы feh
+  exec('pkill -f "feh" 2>/dev/null', () => {});
+  res.json({ success: true, message: 'Слайдшоу остановлено (все окна feh закрыты)' });
 });
 
 app.listen(port, () => {
