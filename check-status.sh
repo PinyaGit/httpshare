@@ -39,6 +39,25 @@ fi
 
 echo ""
 
+# Проверяем зависимости
+echo "=== Проверка зависимостей ==="
+
+# Проверяем Node.js
+if command -v node >/dev/null; then
+    echo "✅ Node.js: $(node --version)"
+else
+    echo "❌ Node.js не установлен"
+fi
+
+# Проверяем feh
+if command -v feh >/dev/null; then
+    echo "✅ feh: $(feh --version | head -1)"
+else
+    echo "❌ feh не установлен (нужен для слайдшоу)"
+fi
+
+echo ""
+
 # Показываем логи, если есть
 if [ -f "/home/mon/httpshare/server.log" ]; then
     echo "📋 Последние логи сервера:"

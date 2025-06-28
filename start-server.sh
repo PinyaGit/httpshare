@@ -14,12 +14,6 @@ if ! command -v node &> /dev/null; then
     sudo apt-get install -y nodejs
 fi
 
-# Устанавливаем зависимости, если нужно
-if [ ! -d "node_modules" ]; then
-    echo "Устанавливаем зависимости..."
-    npm install
-fi
-
 # Проверяем, что порт 8080 свободен
 if lsof -Pi :8080 -sTCP:LISTEN -t >/dev/null ; then
     echo "Порт 8080 уже занят. Останавливаем существующий процесс..."
