@@ -53,7 +53,7 @@ echo "2. Проверяем и устанавливаем зависимости
 # Проверяем, что Node.js установлен
 if ! command -v node &> /dev/null; then
     echo "Node.js не найден. Устанавливаем..."
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get update
     apt-get install -y nodejs
 else
     echo "✅ Node.js уже установлен: $(node --version)"
