@@ -1,7 +1,7 @@
 const fs = require('fs'); // <- Добавлено
 const express = require('express');
 const path = require('path');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const cors = require('cors');
 const multer = require('multer');
 
@@ -54,19 +54,24 @@ app.get('/api/open-image', (req, res) => {
   const { filename, token } = req.query;
   if (token !== 'SECRET123') return res.status(403).send('Доступ запрещён');
 
-  const imagePath = path.join(__dirname, 'public', 'images', filename);
+  // Фильтрация имени файла
+  const safeFilename = path.basename(filename);
+  if (!/^[\w.\-]+$/.test(safeFilename) || !/\.(jpg|png|gif|webp)$/i.test(safeFilename)) {
+    return res.status(400).send('Недопустимое имя файла');
+  }
+  const imagePath = path.join(__dirname, 'public', 'images', safeFilename);
 
   if (process.platform !== 'linux') {
     return res.status(400).send('Открытие изображений поддерживается только на Ubuntu/Linux');
   }
 
   // Останавливаем старые процессы feh перед открытием нового изображения
-  exec('pkill -f "feh" 2>/dev/null', () => {
-    // Открываем изображение через feh в полноэкранном режиме
-    exec(`feh -F -Z "${imagePath}" &`, (err) => {
-      if (err) return res.status(500).send('Ошибка открытия');
-      res.send(`Картинка ${filename} открыта через feh на этом ПК!`);
-    });
+  const pkill = spawn('pkill', ['-f', 'feh']);
+  pkill.on('close', () => {
+    // Открываем изображение через feh в полноэкранном режиме (spawn безопаснее)
+    const feh = spawn('feh', ['-F', '-Z', imagePath], { detached: true, stdio: 'ignore' });
+    feh.unref();
+    res.send(`Картинка ${safeFilename} открыта через feh на этом ПК!`);
   });
 });
 
@@ -159,18 +164,21 @@ app.post('/api/slideshow/start', (req, res) => {
       }
       // Формируем список файлов для feh
       const imagesDir = path.join(__dirname, 'public', 'images');
-      const imageFiles = playlist.images.map(img => path.join(imagesDir, img));
+      const imageFiles = playlist.images.map(img => {
+        const safeImg = path.basename(img);
+        if (!/^[\w.\-]+$/.test(safeImg) || !/\.(jpg|png|gif|webp)$/i.test(safeImg)) return null;
+        return path.join(imagesDir, safeImg);
+      }).filter(Boolean);
+      if (imageFiles.length === 0) {
+        return res.status(400).json({ error: 'Нет валидных файлов для слайдшоу' });
+      }
       const delay = Math.max(1, Math.round((playlist.interval || 5000) / 1000)); // feh требует секунды, минимум 1
       // Останавливаем старые процессы feh
-      exec('pkill -f "feh" 2>/dev/null', () => {
-        // Запускаем feh с плейлистом
-        const filesArg = imageFiles.map(f => `"${f}"`).join(' ');
-        exec(`feh -F -Z -D ${delay} ${filesArg} &`, (err) => {
-          if (err) {
-            console.error('Ошибка запуска feh:', err);
-            return; // Не отправляем второй ответ
-          }
-        });
+      const pkill = spawn('pkill', ['-f', 'feh']);
+      pkill.on('close', () => {
+        // Запускаем feh с плейлистом через spawn
+        const feh = spawn('feh', ['-F', '-Z', '-D', String(delay), ...imageFiles], { detached: true, stdio: 'ignore' });
+        feh.unref();
         res.json({ success: true, message: 'Слайдшоу запущено через feh' });
       });
     } catch (e) {
@@ -189,8 +197,10 @@ app.post('/api/slideshow/stop', (req, res) => {
   }
 
   // Останавливаем все процессы feh
-  exec('pkill -f "feh" 2>/dev/null', () => {});
-  res.json({ success: true, message: 'Слайдшоу остановлено (все окна feh закрыты)' });
+  const pkill = spawn('pkill', ['-f', 'feh']);
+  pkill.on('close', () => {
+    res.json({ success: true, message: 'Слайдшоу остановлено (все окна feh закрыты)' });
+  });
 });
 
 app.listen(port, () => {

@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
 const mime = require('mime-types');
 const serveStatic = require('serve-static');
@@ -11,11 +11,12 @@ let currentIndex = 0;
 
 function closeCurrentWindow() {
   if (process.platform === 'win32') {
-    exec('taskkill /f /im ms-photos.exe 2>nul', () => {});
-    exec('taskkill /f /im rundll32.exe 2>nul', () => {});
-    exec('taskkill /f /im explorer.exe /fi "WINDOWTITLE eq *Photo*" 2>nul', () => {});
+    // Можно попробовать spawn для taskkill, но если не критично, можно не поддерживать закрытие на Windows
+    spawn('taskkill', ['/f', '/im', 'ms-photos.exe']);
+    spawn('taskkill', ['/f', '/im', 'rundll32.exe']);
+    spawn('taskkill', ['/f', '/im', 'explorer.exe', '/fi', 'WINDOWTITLE eq *Photo*']);
   } else {
-    exec('pkill -f "eog|feh|display|gwenview" 2>/dev/null', () => {});
+    spawn('pkill', ['-f', 'eog|feh|display|gwenview']);
   }
 }
 
@@ -23,25 +24,30 @@ function showNextImage() {
   if (currentIndex >= playlist.images.length) {
     currentIndex = 0;
   }
-  const imagePath = path.join(imagesDir, playlist.images[currentIndex]);
+  // Фильтрация имени файла
+  const safeFilename = path.basename(playlist.images[currentIndex]);
+  if (!/^[\w.\-]+$/.test(safeFilename) || !/\.(jpg|png|gif|webp)$/i.test(safeFilename)) {
+    currentIndex++;
+    setTimeout(showNextImage, playlist.interval);
+    return;
+  }
+  const imagePath = path.join(imagesDir, safeFilename);
   closeCurrentWindow();
   setTimeout(() => {
     if (process.platform === 'win32') {
-      exec('rundll32 shimgvw.dll,ImageView_Fullscreen "' + imagePath + '"', (err) => {
-        if (err) {
-          exec('start "" "' + imagePath + '"');
-        }
-      });
+      // spawn для Windows запуска через start
+      spawn('cmd', ['/c', 'start', '', imagePath], { detached: true, stdio: 'ignore' });
     } else {
-      exec('feh -F -Z "' + imagePath + '"', (err) => {
-        if (err) {
-          exec('eog -f "' + imagePath + '"', (err) => {
-            if (err) {
-              exec('xdg-open "' + imagePath + '"');
-            }
-          });
-        }
+      // Используем spawn для feh/eog/xdg-open
+      const feh = spawn('feh', ['-F', '-Z', imagePath], { detached: true, stdio: 'ignore' });
+      feh.on('error', () => {
+        const eog = spawn('eog', ['-f', imagePath], { detached: true, stdio: 'ignore' });
+        eog.on('error', () => {
+          spawn('xdg-open', [imagePath], { detached: true, stdio: 'ignore' });
+        });
+        eog.unref();
       });
+      feh.unref();
     }
   }, 500);
   currentIndex++;
